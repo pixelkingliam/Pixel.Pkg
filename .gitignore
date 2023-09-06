@@ -1,0 +1,148 @@
+# Rider-specific files and directories
+.idea/
+
+# User-specific Rider settings
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+
+# C# build artifacts
+bin/
+obj/
+.obj/
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll
+*.exe
+*.log
+*.userprefs
+*.vscode
+# MSTest
+TestResults/
+[Tt]est[Bb]in/
+*.testsettings
+*.runsettings
+
+
+
+# Visual Studio Code settings
+.vscode/
+
+# JetBrains Rider settings
+.rider/
+
+# NuGet package directories
+packages/
+
+# User-specific Rider settings
+.rider/user-settings
+
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+
+# Windows folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Mac OS Finder files
+.DS_Store
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User-specific files
+*.suo
+*.user
+*.userprefs
+*.sln.docstates
+
+# Mono Auto Generated Files
+mono_crash.*
+
+# Windows image file caches
+ehthumbs_vista.db
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares and USB drives
+$RECYCLE.BIN/
+
+# VSCode directories
+.vscode/
+.idea/codeStyles/
+.idea/inspectionProfiles/
+
+# JetBrains IDE settings
+.idea/misc.xml
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/jarRepositories.xml
+.idea/webResources.xml
+.idea/datasources.xml
+.idea/gantter*
+.idea/databases
+.idea/caches
+.idea/LocalHistory
+.idea/shelf
+.idea/watches.xml
+
+# Rider RiderDrops
+.idea/RiderDrops
+
+# CodeRush settings
+.idea/CodeRush
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# User-specific files
+.idea/replstate.xml
+
+# User-specific files
+.idea/navEditorHistory.xml
+.idea/smoothScroll.xml
+.idea/cvs.xml
+.idea/workspace.xml
+.idea/.name
+.idea/compiler.xml
+.idea/dumb_streams_state
+.idea/recentProjects.xml
+.idea/.idea.default/workspace.xml
+
+# Rider XDG
+.idea/riderXDG/
+.idea/rider-*
+
+# User-specific Rider settings
+.idea/inspectionProfiles/
+.idea/externalAnnotations/
+.idea/coverage/
+.idea/.history/
+.idea/restore/
+.idea/.vscode/
+.idea/.github/
+.idea/quicklists/
+.idea/environment/
+.idea/uiDesigner/
+.idea/uni/breakpoints.xml
+.idea/webServers.xml
+.idea/sqlDataSources.xml
+.idea/quickTasks.xml
+.idea/ssh/
+
+# Visual Studio user-specific files
+.vscode/
+.vs/
+
+# made with chatgpt rofl
+*.DotSettings
+test/
