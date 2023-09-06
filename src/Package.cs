@@ -15,7 +15,6 @@ public class Package
 {
     private byte[] _compressedData;
     public PackageMetadata Metadata;
-    public JObject ExtraJson;
     private Package(Stream compressedBytes)
     {
 
@@ -23,42 +22,25 @@ public class Package
         compressedBytes.Seek(0, SeekOrigin.Begin);
         compressedBytes.CopyTo(data);
         _compressedData = data.ToArray();
-        File.WriteAllBytes("copy3", data.ToArray());
-        
-        Metadata = new();
-        ExtraJson = new();
-    }
-    public byte[] OldToBytes()
-    {
-        var pkg = TarArchive.Create();
-        var md = JsonConvert.SerializeObject(Metadata);
-        Console.WriteLine(md);
-        pkg.AddEntry("metadata", new MemoryStream(Encoding.UTF8.GetBytes(md)));
-        pkg.AddEntry("data", new MemoryStream(_compressedData));
-        pkg.AddEntry("extra", new MemoryStream(Encoding.UTF8.GetBytes(ExtraJson.ToString())));
 
-        var outStream = new MemoryStream();
-        pkg.SaveTo(outStream, new WriterOptions(SharpCompress.Common.CompressionType.None));
-        return outStream.ToArray();
+        Metadata = new();
     }
     public Stream ToStream()
     {
-        var pkg = TarArchive.Create();
-        var md = JsonConvert.SerializeObject(Metadata);
-        pkg.AddEntry("metadata", new MemoryStream(Encoding.UTF8.GetBytes(md)));
-        pkg.AddEntry("data", new MemoryStream(_compressedData));
-        pkg.AddEntry("extra", new MemoryStream(Encoding.UTF8.GetBytes(ExtraJson.ToString())));
+        var md = JObject.FromObject(Metadata).ToString();
         var outStream = new MemoryStream();
-        pkg.SaveTo(outStream, new WriterOptions(SharpCompress.Common.CompressionType.None));
+        outStream.Write(Encoding.UTF8.GetBytes(md)); // write metadata in UTF-8
+        outStream.Write(new byte[] { 0x00, 0x00, 0x00 }, 0, 3); // Write seperator
+        outStream.Write(_compressedData); // write compressed data
         return outStream;
     }
     public byte[] ToBytes()
     {
-        using (MemoryStream stream = (MemoryStream)ToStream())
-        {
-            return stream.ToArray();
-        }
+        using MemoryStream stream = (MemoryStream)ToStream();
+        return stream.ToArray();
     }
+
+
     public static Package Read(Stream stream)
     {
         using (var memoryStream = new MemoryStream())
@@ -85,8 +67,6 @@ public class Package
         using var compressStream = new MemoryStream();
         using var compressor = new DeflateStream(compressStream, CompressionMode.Compress);
         new MemoryStream(data).CopyTo(compressor);
-        //compressor.Close();
-        File.WriteAllBytes("copy2", compressStream.ToArray());
         return new Package(compressStream);
 
     }
@@ -100,67 +80,40 @@ public class Package
     }
     private static Package LoadPackage(byte[] bytes)
     {
-        var tpkg = TarArchive.Open(new MemoryStream(bytes));
-        foreach (var item in tpkg.Entries)
+        int sepIndex = -1;
+        for (int index = 0; index < bytes.Length; index++)
         {
-            Console.WriteLine(item.Key);
-        }
-        if (tpkg.Entries.Count != 3)
-            throw new FileLoadException("Invalid PKG file (Invalid Structure)");
-        if (!tpkg.Entries.All(i => i.Key == "metadata" || i.Key == "data" || i.Key == "extra"))
-            throw new FileLoadException("Invalid PKG file (Invalid Structure)");
-
-
-        // Handle metadata
-        PackageMetadata metadata;
-        try
-        {
-            string md;
-            using (var reader = new StreamReader(tpkg.Entries.First(pkg => pkg.Key == "metadata").OpenEntryStream(), Encoding.UTF8))
-            {
-                md = reader.ReadToEnd();
-            }
-            metadata = JsonConvert.DeserializeObject<PackageMetadata>(md);
-        }
-        catch (Exception)
-        {
-
-            throw new FileLoadException("Invalid PKG file (Invalid Metadata)"); ;
-        }
-        // Handle extra
-        JObject extraJson = new();
-
-        try
-        {
-            string extra;
-            using (var reader = new StreamReader(tpkg.Entries.First(pkg => pkg.Key == "extra").OpenEntryStream(), Encoding.UTF8))
-            {
-                extra = reader.ReadToEnd();
-            }
-            if (extra != string.Empty)
-                extraJson = JObject.Parse(extra);
-        }
-        catch (System.Exception)
-        {
-            throw new FileLoadException("Invalid PKG file (Invalid Extra)"); ;
+            if(bytes[index] != 0x00)
+                continue;
+            if (bytes[index + 1] != 0x00)
+                continue;
+            if (bytes[index + 2] != 0x00)
+                continue;
+            sepIndex = index;
+            break;
 
         }
+        var mdBytes = bytes.Take(sepIndex).ToArray();
+        var dataBytes = bytes.Skip(sepIndex + 3).ToArray();
 
-        // Handle data
-        var compressedData = tpkg.Entries.First(pkg => pkg.Key == "data").OpenEntryStream();
-        var pkg = new Package(compressedData) { Metadata = metadata, ExtraJson = extraJson };
+
+        var pkg = new Package(new MemoryStream(dataBytes));
+        
+        var md = Encoding.UTF8.GetString(mdBytes);
+        pkg.Metadata = JsonConvert.DeserializeObject<PackageMetadata>(md);
+
         return pkg;
     }
-    public Stream GetCompressedData()
+    public MemoryStream GetCompressedData()
     {
         return new MemoryStream(_compressedData);
     }
-    public Stream GetUncompressedData()
+    public MemoryStream GetUncompressedData()
     {
         var rawBytes = new MemoryStream();
-        var decompressor = new DeflateStream(rawBytes, CompressionMode.Decompress);
+        var decompressor = new DeflateStream(new MemoryStream(_compressedData), CompressionMode.Decompress);
         var data = new MemoryStream(_compressedData);
-        data.CopyTo(decompressor);
+        decompressor.CopyTo(rawBytes);
         decompressor.Close();
         return rawBytes;
     }
@@ -175,5 +128,6 @@ public struct PackageMetadata
     public string AuthorName;
     public string[] AuthorContacts;
     public string Type;
+    public JObject MetaMeta;
 
 }
