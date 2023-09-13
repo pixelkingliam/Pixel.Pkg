@@ -2,6 +2,8 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
+using SharpCompress.Compressors.Xz;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace Pixel.Pkg;
@@ -17,11 +19,11 @@ public class Package
     {
 
         MemoryStream data = new();
-        compressedBytes.Seek(0, SeekOrigin.Begin);
+        //compressedBytes.Seek(0, SeekOrigin.Begin);
         compressedBytes.CopyTo(data);
         _compressedData = data.ToArray();
 
-        Metadata = new() {FormatVersion = Version};
+        Metadata = new() { FormatVersion = Version };
     }
     /// <summary>
     /// Creates a stream out of the compressed package, ready for writing.
@@ -30,10 +32,16 @@ public class Package
     public Stream ToStream()
     {
         var md = JObject.FromObject(Metadata).ToString();
+        var mdBytes = Encoding.UTF8.GetBytes(md);
         var outStream = new MemoryStream();
-        outStream.Write(Encoding.UTF8.GetBytes(md)); // write metadata in UTF-8
-        outStream.Write(new byte[] { 0x00, 0x00, 0x00 }, 0, 3); // Write seperator
-        outStream.Write(_compressedData); // write compressed data
+        outStream.Write("ppkg"u8.ToArray(), 0, 4); // Write magic bytes
+        var mdLength = BitConverter.GetBytes(mdBytes.Length);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(mdLength);
+        outStream.Write(mdLength, 0, 4); // write metadata length
+        outStream.Write(mdBytes, 0, mdBytes.Length); // write metadata in UTF-8
+        outStream.Write(_compressedData, 0, _compressedData.Length); // write compressed data
+
         return outStream;
     }
     /// <summary>
@@ -53,11 +61,7 @@ public class Package
     /// <returns>The pkg</returns>
     public static Package Read(Stream stream)
     {
-        using (var memoryStream = new MemoryStream())
-        {
-            stream.CopyTo(memoryStream);
-            return LoadPackage(memoryStream.ToArray());
-        }
+        return LoadPackage(stream);
     }
     /// <summary>
     /// Reads a pkg file represented as a byte array.
@@ -66,7 +70,7 @@ public class Package
     /// <returns>The pkg</returns>
     public static Package Read(byte[] bytes)
     {
-        return LoadPackage(bytes);
+        return LoadPackage(new MemoryStream(bytes));
     }
     /// <summary>
     /// Reads a pkg file from a path.
@@ -75,7 +79,7 @@ public class Package
     /// <returns>The pkg</returns>
     public static Package Read(string path)
     {
-        return LoadPackage(File.ReadAllBytes(path));
+        return LoadPackage(File.OpenRead(path));
     }
     /// <summary>
     /// Creates a new Package with data from a byte array.
@@ -87,6 +91,7 @@ public class Package
         using var compressStream = new MemoryStream();
         using var compressor = new DeflateStream(compressStream, CompressionMode.Compress);
         new MemoryStream(data).CopyTo(compressor);
+        compressStream.Seek(0, SeekOrigin.Begin);
         return new Package(compressStream);
 
     }
@@ -103,28 +108,32 @@ public class Package
         return new Package(compressStream);
 
     }
-    private static Package LoadPackage(byte[] bytes)
+    private static Package LoadPackage(Stream stream)
     {
-        int sepIndex = -1;
-        for (int index = 0; index < bytes.Length; index++)
-        {
-            if (bytes[index] != 0x00)
-                continue;
-            if (bytes[index + 1] != 0x00)
-                continue;
-            if (bytes[index + 2] != 0x00)
-                continue;
-            sepIndex = index;
-            break;
-
-        }
-        var mdBytes = bytes.Take(sepIndex).ToArray();
-        var dataBytes = bytes.Skip(sepIndex + 3).ToArray();
+        int mdLength = 0;
 
 
-        var pkg = new Package(new MemoryStream(dataBytes));
+        if (stream.Length < 4)
+            throw new FileLoadException("PKG file is too short for magic bytes!");
+        byte[] buffer = new byte[4];
+        stream.Read(buffer, 0, 4);
+        if (!buffer.SequenceEqual("ppkg"u8.ToArray()))
+            throw new FileLoadException("PKG file doesn't start with correct magic bytes!");
+        stream.Read(buffer, 0, 4); // int 32 length of metadata
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(buffer);
 
-        var md = Encoding.UTF8.GetString(mdBytes);
+        mdLength = BitConverter.ToInt32(buffer);
+        
+        byte[] mdBytes = new byte[mdLength];
+        stream.Read(mdBytes, 0, mdLength);
+        MemoryStream dataBytes = new();
+        stream.CopyTo(dataBytes);
+        stream.Dispose();
+        dataBytes.Seek(0, SeekOrigin.Begin);
+        var pkg = new Package(dataBytes);
+
+        var md = Encoding.UTF8.GetString(mdBytes.ToArray());
         pkg.Metadata = JsonConvert.DeserializeObject<PackageMetadata>(md);
 
         return pkg;
@@ -144,8 +153,7 @@ public class Package
     public MemoryStream GetUncompressedData()
     {
         var rawBytes = new MemoryStream();
-        var decompressor = new DeflateStream(new MemoryStream(_compressedData), CompressionMode.Decompress);
-        var data = new MemoryStream(_compressedData);
+        var decompressor = new DeflateStream(new MemoryStream(_compressedData), CompressionMode.Decompress);        
         decompressor.CopyTo(rawBytes);
         decompressor.Close();
         return rawBytes;
