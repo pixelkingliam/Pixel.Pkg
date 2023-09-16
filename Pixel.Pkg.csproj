@@ -11,7 +11,7 @@
     <Copyright>
     Copyright © 2023 Pixel
     </Copyright>
-    <PackageReadmeFile>./README</PackageReadmeFile>
+    <PackageReadmeFile>./README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/pixelkingliam/Pixel.Pkg</PackageProjectUrl>
     <PackageLicenseFile>./LICENSE</PackageLicenseFile>
   </PropertyGroup>
