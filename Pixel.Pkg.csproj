@@ -4,11 +4,20 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>Pixel.Pkg</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Description>C# Implementation of the PPKG file format.</Description>
+    <Authors>Pixel</Authors> 
+    <Copyright>
+    Copyright © 2023 Pixel
+    </Copyright>
+    <PackageReadmeFile>./README</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/pixelkingliam/Pixel.Pkg</PackageProjectUrl>
+    <PackageLicenseFile>./LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="SharpCompress" Version="0.33.0" />
   </ItemGroup>
 
 </Project>
