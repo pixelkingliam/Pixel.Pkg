@@ -8,7 +8,7 @@ Docs can be found at the project's github wiki page
 
 # What is ppkg?!?
 
-ppkg is a file format i have made to solve a couple of problems, you can read more about it here
+ppkg is a file format i have made to solve a couple of problems, you can read more about it [here](https://github.com/pixelkingliam/ppkg)
 
 # Contributions
 
