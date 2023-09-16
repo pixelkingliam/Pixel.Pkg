@@ -2,8 +2,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
-using SharpCompress.Compressors.Xz;
-using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace Pixel.Pkg;
