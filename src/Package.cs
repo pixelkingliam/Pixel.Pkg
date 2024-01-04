@@ -17,7 +17,6 @@ public class Package
     {
 
         MemoryStream data = new();
-        //compressedBytes.Seek(0, SeekOrigin.Begin);
         compressedBytes.CopyTo(data);
         _compressedData = data.ToArray();
 
@@ -86,11 +85,7 @@ public class Package
     /// <returns>A new Package<cref</returns>
     public static Package Create(byte[] data)
     {
-        using var compressStream = new MemoryStream();
-        using var compressor = new DeflateStream(compressStream, CompressionMode.Compress);
-        new MemoryStream(data).CopyTo(compressor);
-        compressStream.Seek(0, SeekOrigin.Begin);
-        return new Package(compressStream);
+        return Create(new MemoryStream(data));
 
     }
     /// <summary>
@@ -101,10 +96,12 @@ public class Package
     public static Package Create(Stream data)
     {
         using var compressStream = new MemoryStream();
-        using var compressor = new DeflateStream(compressStream, CompressionMode.Compress);
-        data.CopyTo(compressor);
+        using (var compressor = new DeflateStream(compressStream, CompressionMode.Compress, true)) // Use "true" to leave the base stream open
+        {
+            data.CopyTo(compressor);
+        }
+        compressStream.Seek(0, SeekOrigin.Begin); // Reset the position to the beginning
         return new Package(compressStream);
-
     }
     private static Package LoadPackage(Stream stream)
     {
